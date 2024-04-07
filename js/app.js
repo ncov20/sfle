@@ -121,7 +121,7 @@ function handleInput() {
         extraQsoDate = item;
       } else if (item.match(/^[0-2][0-9][0-5][0-9]$/)) {
         qsotime = item;
-      } else if (item.match(/^CW$|^SSB$|^FM$|^AM$|^PSK$|^FT8$/i)) {
+      } else if (item.match(/^CW$|^SSB$|^FM$|^AM$|^PSK$|^FT4$|^RTTY$|^JT65$|^FT8$/i)) {
         mode = item.toUpperCase();
       } else if (
         item.match(/^[1-9]?\d\d[Mm]$/) ||
@@ -148,7 +148,7 @@ function handleInput() {
         )
       ) {
         callsign = item.toUpperCase();
-      } else if (itemNumber > 0 && item.match(/^\d{1,3}$/)) {
+      } else if (itemNumber > 0 && item.match(/^[+-]?\d{1,3}$/)) {
         if (rst_s === null) {
           rst_s = item;
         } else {
@@ -393,13 +393,13 @@ function getFreqFromBand(band, mode) {
 function getSettingsMode(mode) {
   if (mode === "AM" || mode === "FM" || mode === "SSB") {
     return "SSB";
-  }
-
-  if (mode === "CW") {
+  } else if (mode === "CW") {
     return "CW";
+  } else if (mode == "RTTY") {
+    return "RTTY"
+  } else {
+    return "DIGI";
   }
-
-  return "DIGI";
 }
 
 var htmlSettings = "";
@@ -476,8 +476,14 @@ Internet: https://sfle.ok2cqr.com
     qso = qso + getAdifTag("CALL", item[2]);
     qso = qso + getAdifTag("FREQ", item[3]);
     qso = qso + getAdifTag("BAND", item[4]);
-    qso = qso + getAdifTag("MODE", item[5]);
+    if (item[5] == "FT4") {
+      qso = qso + getAdifTag("MODE", "MFSK");
+      qso = qso + getAdifTag("SUBMODE", "FT4");
 
+    } else {
+      qso = qso + getAdifTag("MODE", item[5]);
+    }
+    
     var rst = item[6];
     settingsMode = getSettingsMode(rst);
     if (settingsMode === "SSB") {
@@ -558,30 +564,39 @@ function getReportByMode(rst, mode) {
   settingsMode = getSettingsMode(mode);
 
   if (rst === null) {
-    if (settingsMode === "SSB") {
-      return "59";
+    if (settingsMode == "SSB") {
+      return "59"
+    } else if(settingsMode === "CW" || settingsMode === "RTTY") {
+      return "599";
+    } else if (settingsMode == "DIGI") {
+      return "-15";
+    } else {
+      return "599";
     }
-
-    return "599";
+    
   }
 
   if (settingsMode === "SSB") {
     if (rst.length === 1) {
       return "5" + rst;
-    }
-    if (rst.length === 3) {
+    }else if (rst.length === 3) {
       return rst.slice(0, 2);
     }
 
-    return rst;
+    return rst; 
+  } else if (settingsMode === "CW" || settingsMode === "RTTY") {
+    if (rst.length === 1) {
+      return "5" + rst + "9";
+    } else if (rst.length === 2) {
+      return rst + "9";
+    }
+  } else if (settingsMode == "DIGI") {
+    if (rst.length === 1) {
+      return "-0" + rst;
+    } else if (rst.length === 2) {
+      return rst[0] + "0" + rst[1];
+    }
   }
-
-  if (rst.length === 1) {
-    return "5" + rst + "9";
-  } else if (rst.length === 2) {
-    return rst + "9";
-  }
-
   return rst;
 }
 
