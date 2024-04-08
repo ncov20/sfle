@@ -92,7 +92,8 @@ function handleInput() {
   var extraQsoDate = qsodate;
   var band = "";
   var mode = "";
-  var freq = "";
+  var rx_freq = 0.0;
+  var tx_freq = 0.0;
   var callsign = "";
   var sotaWff = "";
   qsoList = [];
@@ -103,6 +104,7 @@ function handleInput() {
   lines.forEach((row) => {
     var rst_s = null;
     var rst_r = null;
+    var is_first_freq = true;
     items = row.startsWith("day ") ? [row] : row.split(" ");
     var itemNumber = 0;
     items.forEach((item) => {
@@ -128,10 +130,15 @@ function handleInput() {
         item.toUpperCase() === "70CM"
       ) {
         band = item.toUpperCase();
-        freq = 0;
+        rx_freq = 0;
       } else if (item.match(/^\d+\.\d+$/)) {
-        freq = item;
-        band = "";
+        if (is_first_freq) {
+          tx_freq = parseFloat(item);
+          is_first_freq = false;
+          band = "";
+        } else {
+          rx_freq = parseFloat(item);
+        }
       } else if (item.match(/^[1-9]{1}$/) && qsotime && itemNumber === 0) {
         qsotime = qsotime.replace(/.$/, item);
       } else if (item.match(/^[0-5][0-9]{1}$/) && qsotime && itemNumber === 0) {
@@ -163,10 +170,10 @@ function handleInput() {
     checkMainFieldsErrors();
 
     if (callsign) {
-      if (freq === 0) {
-        freq = getFreqFromBand(band, mode);
+      if (tx_freq === 0.0) {
+        tx_freq = getFreqFromBand(band, mode);
       } else if (band === "") {
-        band = getBandFromFreq(freq);
+        band = getBandFromFreq(tx_freq);
       }
 
       if (band === "") {
@@ -191,7 +198,8 @@ function handleInput() {
         extraQsoDate,
         qsotime,
         callsign,
-        freq,
+        tx_freq,
+        rx_freq,
         band,
         mode,
         rst_s,
@@ -203,7 +211,7 @@ function handleInput() {
           <td>${extraQsoDate}</td>
           <td>${qsotime}</td>
           <td>${callsign}</td>
-          <td><span data-toggle="tooltip" data-placement="left" title="${freq}">${band}</span></td>
+          <td><span data-toggle="tooltip" data-placement="left" title="${tx_freq}">${band}</span></td>
           <td>${mode}</td>
           <td>${rst_s}</td>
           <td>${rst_r}</td>
@@ -474,24 +482,27 @@ Internet: https://sfle.ok2cqr.com
     qso = getAdifTag("QSO_DATE", qsodate);
     qso = qso + getAdifTag("TIME_ON", item[1].replace(":", ""));
     qso = qso + getAdifTag("CALL", item[2]);
-    qso = qso + getAdifTag("FREQ", item[3]);
-    qso = qso + getAdifTag("BAND", item[4]);
-    if (item[5] == "FT4") {
+    qso = qso + getAdifTag("FREQ", item[3].toString());
+    if (item[4] != 0.0) {
+      qso = qso + getAdifTag("FREQ_RX", item[4].toString());
+    }
+    qso = qso + getAdifTag("BAND", item[5]);
+    if (item[6] == "FT4") {
       qso = qso + getAdifTag("MODE", "MFSK");
       qso = qso + getAdifTag("SUBMODE", "FT4");
 
     } else {
-      qso = qso + getAdifTag("MODE", item[5]);
+      qso = qso + getAdifTag("MODE", item[6]);
     }
     
-    var rst = item[6];
+    var rst = item[7];
     settingsMode = getSettingsMode(rst);
     if (settingsMode === "SSB") {
       rst = "59";
     }
     qso = qso + getAdifTag("RST_SENT", rst);
 
-    var rst = item[7];
+    var rst = item[8];
     settingsMode = getSettingsMode(rst);
     if (settingsMode === "SSB") {
       rst = "59";
