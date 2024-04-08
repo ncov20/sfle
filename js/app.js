@@ -92,8 +92,8 @@ function handleInput() {
   var extraQsoDate = qsodate;
   var band = "";
   var mode = "";
-  var rx_freq = 0.0;
-  var tx_freq = 0.0;
+  var rx_freq = "";
+  var tx_freq = "";
   var callsign = "";
   var sotaWff = "";
   qsoList = [];
@@ -130,14 +130,15 @@ function handleInput() {
         item.toUpperCase() === "70CM"
       ) {
         band = item.toUpperCase();
-        rx_freq = 0;
+        rx_freq = "";
       } else if (item.match(/^\d+\.\d+$/)) {
         if (is_first_freq) {
-          tx_freq = parseFloat(item);
+          rx_freq = "";
+          tx_freq = item;
           is_first_freq = false;
           band = "";
         } else {
-          rx_freq = parseFloat(item);
+          rx_freq = item;
         }
       } else if (item.match(/^[1-9]{1}$/) && qsotime && itemNumber === 0) {
         qsotime = qsotime.replace(/.$/, item);
@@ -170,7 +171,7 @@ function handleInput() {
     checkMainFieldsErrors();
 
     if (callsign) {
-      if (tx_freq === 0.0) {
+      if (tx_freq === "") {
         tx_freq = getFreqFromBand(band, mode);
       } else if (band === "") {
         band = getBandFromFreq(tx_freq);
@@ -359,6 +360,7 @@ ssb
 });
 
 function getBandFromFreq(freq) {
+  freq = parseFloat(freq)
   if (freq > 1.7 && freq < 2) {
     return "160M";
   } else if (freq > 3.4 && freq < 4) {
@@ -482,9 +484,9 @@ Internet: https://sfle.ok2cqr.com
     qso = getAdifTag("QSO_DATE", qsodate);
     qso = qso + getAdifTag("TIME_ON", item[1].replace(":", ""));
     qso = qso + getAdifTag("CALL", item[2]);
-    qso = qso + getAdifTag("FREQ", item[3].toString());
-    if (item[4] != 0.0) {
-      qso = qso + getAdifTag("FREQ_RX", item[4].toString());
+    qso = qso + getAdifTag("FREQ", item[3]);
+    if (item[4] != "") {
+      qso = qso + getAdifTag("FREQ_RX", item[4]);
     }
     qso = qso + getAdifTag("BAND", item[5]);
     if (item[6] == "FT4") {
@@ -559,7 +561,7 @@ Internet: https://sfle.ok2cqr.com
 function isBandModeEntered() {
   let isBandModeOK = true;
   qsoList.forEach((item) => {
-    if (item[4] === "" || item[5] === "") {
+    if (item[5] === "" || item[6] === "") {
       isBandModeOK = false;
     }
   });
